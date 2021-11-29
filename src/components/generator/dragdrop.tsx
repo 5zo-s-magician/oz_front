@@ -95,6 +95,7 @@ const [memberList, setMemberList] = useState<any[][]>([[]]);
 
   const memberOnClick = () => {
     fetch(`http://localhost:5000/`, {
+      mode: 'no-cors',
       method: "POST",
       headers: {
         "Content-Type": "application/json",
