@@ -8,7 +8,15 @@ import React, {
 } from "react";
 import "./DragDrop.scss";
 import styled from "styled-components";
+import { css } from "@emotion/react";
 import { FaLongArrowAltRight } from "react-icons/fa";
+import ClipLoader from "react-spinners/ClipLoader";
+
+const override = css`
+  display: block;
+  margin: 0 auto;
+  border-color: red;
+`
 
 const MemberContainer = styled.div`
   width: 140px;
@@ -62,9 +70,12 @@ const DragDrop = () => {
   const [audioFile, setAudioFile] = useState<string | ArrayBuffer>("");
 //   const [memberList, setMemberList] = useState<String[]>([]);
 const [memberList, setMemberList] = useState<any[][]>([[]]);
-  const [memberIndex, setMemberIndex] = useState<Number>(-1);
-  const [voiceIndex, setVoiceIndex] = useState<Number>(-1);
+  const [memberIndex, setMemberIndex] = useState<number>(-1);
+  const [voiceIndex, setVoiceIndex] = useState<number>(-1);
   const voiceList = ["Man Voice", "Woman Voice"];
+  const [vcResult, setVcResult] = useState("");
+  const [memberLoading, setMemberLoading] = useState(false);
+  const [vcLoading, setVcLoading] = useState(false);
   // const [getMember, setGetMember] = useState<Boolean>(false);
 
   useEffect(() => {
@@ -92,17 +103,34 @@ const [memberList, setMemberList] = useState<any[][]>([[]]);
   }, [files, audioFile]);
 
   useEffect(() => {}, [memberList]);
+  useEffect(() => {
+
+    //console.log(vcResult);
+    console.log(vcResult.length);
+    console.log(audioFile.toString())
+  }, [vcResult]);
+  useEffect(()=>{},[vcLoading])
+  useEffect(()=>{},[memberLoading])
 
   const memberOnClick = () => {
+    setMemberLoading(true)
+    console.log("check")
+    //console.log(audioFile.toString())
+    var tmpbase64 = audioFile.toString().split('base64,')
+    //console.log(tmpbase64[1])
+    console.log(JSON.stringify({
+      base64:tmpbase64[1].toString(),
+      song_name: musicName.toString(),
+    }))
     fetch(`http://localhost:5000/`, {
-      mode: 'no-cors',
+      mode: 'cors',
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
+        "content-type": "application/json",
       },
       body: JSON.stringify({
-        base64: audioFile.toString(),
         song_name: musicName.toString(),
+        base64:tmpbase64[1].toString()
       }),
     })
     .then((res) => res.json())
@@ -111,11 +139,49 @@ const [memberList, setMemberList] = useState<any[][]>([[]]);
             String(key), data[key]
         ])
         setMemberList(result)
+        setMemberLoading(false)
     })
     .catch((err) => console.log(err));
     // api 넣기
     // setMemberList(["TOP", "GD", "태양", "승리", "대성"]);
   };
+
+  const vcOnClick = () => {
+    setVcLoading(true)
+    console.log("check")
+    //console.log(audioFile.toString())
+    var targetName = "Man"
+    var tmpbase64 = audioFile.toString().split('base64,')
+    if(voiceIndex == 1){
+      targetName = "Woman"
+    }
+    console.log( JSON.stringify({
+      time: memberList[memberIndex][1],
+      target: targetName.toString(),
+      base64: tmpbase64[1].toString()
+    }))
+    fetch(`http://localhost:5000/new_song`, {
+      mode: 'cors',
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        time: memberList[memberIndex][1],
+        target: targetName.toString(),
+        base64: tmpbase64[1].toString()
+      }),
+    })
+    .then((res) => res.json())
+    .then((data) => {
+        console.log(data)
+        //var resulttmp = data.final_base64.toString().split("b'")
+        var resulttmp = "data:audio/mpeg;base64,"+  data.final_base64.toString()
+        setVcLoading(false)
+        setVcResult(resulttmp)
+    })
+    .catch((err) => console.log(err));
+  }
 
   const onChangeFiles = useCallback(
     (e: ChangeEvent<HTMLInputElement> | any): void => {
@@ -278,6 +344,13 @@ const [memberList, setMemberList] = useState<any[][]>([[]]);
           <GetMemberButton onClick={memberOnClick}>
             파트 불러오기
           </GetMemberButton>
+          {memberLoading?<>
+          <div style={{height:"30px"}}/>
+          <ClipLoader color="#FFFFFF" loading={memberLoading} css={override}/>
+          <div style={{marginTop:"20px", marginBottom:"20px"}}>
+            멤버를 불러오는 중입니다...<br />
+            약 10초의 시간이 소요됩니다.</div>
+          </>:<></>}
         </>
       ) : (
         <></>
@@ -295,7 +368,7 @@ const [memberList, setMemberList] = useState<any[][]>([[]]);
           >
             <MemberContainer>
               {memberList.map((name, index) => (
-                <div style={{ width: "100%", display: "flex", height: "30px" }}>
+                <div style={{ width: "100%", display: "flex", height: "50px", lineHeight:"150%" }}>
                   {index == memberIndex ? (
                     <CheckButton style={{ backgroundColor: "green" }} />
                   ) : (
@@ -327,6 +400,26 @@ const [memberList, setMemberList] = useState<any[][]>([[]]);
               ))}
             </MemberContainer>
           </div>
+          <GetMemberButton style={{marginBottom:"30px"}} onClick={vcOnClick}>
+            voice conversion 시작
+          </GetMemberButton>
+          {vcLoading?<>
+          <div style={{height:"30px"}}/>
+          <ClipLoader color="#FFFFFF" loading={vcLoading} css={override}/>
+          <div style={{marginTop:"20px", marginBottom:"20px"}}>
+            목소리를 변환하는 중입니다...<br />
+            약 5분에서 10분의 시간이 소요됩니다.<br/>
+            잠시만 기다려주세요.</div>
+          </>:<></>}
+          {vcResult.length > 1000?<>
+            {/*<audio controls={true}>
+              <source src={audioFile.toString()} />
+          </audio>*/}
+          <audio controls src={vcResult.toString()}/>
+          <div style={{marginTop:"20px", marginBottom:"20px"}}>
+            마우스 오른쪽을 클릭하면 음원을 다운받을 수 있습니다.</div>
+          </>
+          :<></>}
         </>
       ) : (
         <></>
