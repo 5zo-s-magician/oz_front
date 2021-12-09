@@ -91,7 +91,7 @@ const [memberList, setMemberList] = useState<any[][]>([[]]);
     console.log(audioFile);
   }, [files, audioFile]);
 
-  useEffect(() => {}, [memberList]);
+  useEffect(() => {}, [memberList]); 
 
   const memberOnClick = () => {
     fetch(`http://localhost:5000/`, {
