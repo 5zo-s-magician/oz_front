@@ -15,7 +15,10 @@ The page will reload if you make edits.\
 You will also see any lint errors in the console.
 
 ```
-git clone
+git clone https://github.com/5zo-s-magician/oz_front.git
+cd oz_front
+npm install
+npm start
 ```
 
 ### `yarn test`
